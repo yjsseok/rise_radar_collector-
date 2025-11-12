@@ -1,14 +1,14 @@
 # 기본 SENSR 연결 설정
 sensr:
-  host: "122.202.187.5"            # 기본 지점 (HQ)
-  active_host_label: "kn"
+  host: "YOUR_HOST_IP"            # 기본 지점 IP 주소
+  active_host_label: "default"
   hosts:
-    - id: "kimnyeong"
-      address: "112.133.37.122"
-      description: "김녕"
-    - id: "samyang"
-      address: "122.202.187.5"
-      description: "삼양"
+    - id: "site1"
+      address: "YOUR_SITE1_IP"
+      description: "Site 1"
+    - id: "site2"
+      address: "YOUR_SITE2_IP"
+      description: "Site 2"
   ports:
     output_data: 5050      # 객체, 이벤트 데이터 스트림
     point_cloud: 5051      # 포인트클라우드 데이터 스트림
@@ -30,7 +30,7 @@ sensr:
 
 recording:
   duration: 60             # bag 파일 최대 길이 (초) - 메모리 최적화: 600→60
-  output_directory: "/mnt/f/radar"
+  output_directory: "./output"
   filename_format: "sensr_data_{timestamp}.bag"
   
   # 데이터 샘플링 주기 (정밀도 제어)

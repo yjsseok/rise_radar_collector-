@@ -11,6 +11,12 @@ logs/
 *.log
 */logs/
 
+# Configuration files with sensitive data
+config/config.yaml
+*/config/config.yaml
+radar_v2/config/config.yaml
+sensr_lidar_recorder/config/config.yaml
+
 # Python
 __pycache__/
 *.py[cod]
