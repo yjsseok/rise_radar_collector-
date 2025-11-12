@@ -1,0 +1,18 @@
+sensr_driver:
+  ros__parameters:
+    host: "112.133.37.122"
+    output_port: 5050
+    pointcloud_port: 5051
+    frame_id: "sensr"
+    publish_rate: 10.0
+
+sensr_bag_recorder:
+  ros__parameters:
+    output_directory: "./sensr_bags"
+    bag_duration: 60
+    max_bag_size: 1024
+    topics:
+      - "/sensr/pointcloud"
+      - "/sensr/objects"
+      - "/sensr/events"
+      - "/sensr/diagnostics"

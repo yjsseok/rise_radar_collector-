@@ -40,6 +40,13 @@ sensr_lidar_recorder/venv/
 *_pb2.py
 *_pb2_grpc.py
 
+# Embedded git repositories (external dependencies)
+radar_v2/sensr_sdk/
+sensr_lidar_recorder/sensr_sdk/
+sensr_lidar_recorder/sensr_proto/
+ros_test/src/sensr_ros2_driver/sensr_proto/
+sensr_ros_interface/
+
 # IDE
 .vscode/
 .idea/

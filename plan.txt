@@ -1,0 +1,401 @@
+# SENSR 라이다 데이터 수집 프로젝트 계획서
+
+## 📋 프로젝트 개요
+
+### 목적
+Seoul Robotics SENSR 시스템에서 라이다 데이터를 실시간으로 수집하여 10초 단위로 분할된 ROS bag 파일로 저장하는 Python 프로그램 개발
+
+### 주요 요구사항
+- **데이터 소스**: 112.133.37.122 (SENSR 서버)
+- **데이터 형식**: 포인트클라우드 및 객체 정보
+- **출력 형식**: ROS bag 파일 (.bag)
+- **분할 단위**: 10초 간격
+- **프로그래밍 언어**: Python 3
+
+---
+
+## 🛠 기술 스택 및 요구사항
+
+### 핵심 기술
+- **통신**: WebSocket (websocket-client)
+- **데이터 직렬화**: Protocol Buffers (protobuf)
+- **ROS 통합**: rosbag, rospy
+- **멀티스레딩**: threading
+- **시간 관리**: datetime
+
+### 시스템 요구사항
+- Ubuntu 18.04+ (ROS Melodic/Noetic 지원)
+- Python 3.6+
+- ROS 환경 설정
+- 네트워크 연결 (112.133.37.122 접근 가능)
+
+---
+
+## 🔧 Phase 1: 개발 환경 설정
+
+### 1.1 시스템 패키지 설치
+```bash
+# 기본 개발 도구
+sudo apt-get update
+sudo apt-get install -y build-essential cmake git wget
+
+# Protobuf 빌드 도구
+sudo apt-get install -y autoconf automake libtool curl make g++ unzip
+```
+
+### 1.2 Protobuf 3.11.4 설치
+```bash
+# Protobuf 소스 다운로드 및 빌드
+curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.4/protobuf-cpp-3.11.4.zip
+unzip protobuf-cpp-3.11.4.zip
+rm protobuf-cpp-3.11.4.zip
+cd protobuf-3.11.4
+./autogen.sh
+./configure CXXFLAGS=-fPIC
+make -j$(nproc)
+make check
+sudo make install
+sudo ldconfig
+cd ..
+```
+
+### 1.3 Python 패키지 설치
+```bash
+pip3 install --upgrade pip
+pip3 install websocket-client protobuf rosbag rospy sensor-msgs std-msgs geometry-msgs
+```
+
+### 1.4 Seoul Robotics SDK 설정
+```bash
+# SENSR SDK 다운로드
+git clone https://github.com/seoulrobotics/sensr_sdk.git
+cd sensr_sdk
+
+# Python SDK 설정
+cd python
+./configure.sh
+cd ../..
+
+# Protobuf 정의 파일 다운로드
+git clone https://github.com/seoulrobotics/sensr_proto.git
+```
+
+### ✅ Phase 1 체크리스트
+- [ ] 시스템 패키지 설치 완료
+- [ ] Protobuf 3.11.4 설치 및 확인
+- [ ] Python 패키지 설치 완료
+- [ ] SENSR SDK 다운로드 및 설정
+- [ ] sensr_proto 레포지토리 클론
+- [ ] 개발 디렉토리 구조 생성
+
+---
+
+## 📝 Phase 2: 프로젝트 구조 설계
+
+### 2.1 디렉토리 구조
+```
+sensr_lidar_recorder/
+├── src/
+│   ├── __init__.py
+│   ├── sensr_client.py      # SENSR 서버 연결 클라이언트
+│   ├── data_processor.py    # 데이터 변환 및 처리
+│   ├── bag_recorder.py      # ROS bag 레코딩 관리
+│   └── utils.py            # 유틸리티 함수
+├── config/
+│   └── config.yaml         # 설정 파일
+├── proto/                  # Protobuf 정의 파일
+├── logs/                   # 로그 파일
+├── output/                 # 생성된 bag 파일
+├── tests/                  # 테스트 코드
+├── requirements.txt        # Python 의존성
+├── main.py                # 메인 실행 파일
+└── README.md              # 프로젝트 문서
+```
+
+### 2.2 설정 파일 구조 (config.yaml)
+```yaml
+sensr:
+  host: "112.133.37.122"
+  ports:
+    output_data: 5050      # 객체, 이벤트 데이터
+    point_cloud: 5051      # 포인트클라우드 데이터
+  reconnect_interval: 5    # 재연결 시도 간격 (초)
+
+recording:
+  duration: 10             # bag 파일 분할 간격 (초)
+  output_directory: "./output"
+  filename_format: "sensr_data_{timestamp}.bag"
+  
+ros:
+  topics:
+    pointcloud: "/sensr/pointcloud"
+    objects: "/sensr/objects"
+    events: "/sensr/events"
+
+logging:
+  level: "INFO"
+  file: "./logs/sensr_recorder.log"
+```
+
+### ✅ Phase 2 체크리스트
+- [ ] 프로젝트 디렉토리 구조 생성
+- [ ] 설정 파일 템플릿 작성
+- [ ] Python 패키지 구조 설계
+- [ ] 로그 및 출력 디렉토리 생성
+
+---
+
+## 🔌 Phase 3: SENSR 연결 모듈 개발
+
+### 3.1 WebSocket 클라이언트 구현 (sensr_client.py)
+
+#### 주요 기능
+- SENSR 서버 연결 관리
+- 데이터 수신 및 큐잉
+- 연결 끊김 시 자동 재연결
+- Protobuf 메시지 디코딩
+
+#### 구현해야 할 메서드
+```python
+class SensrClient:
+    def __init__(self, config)
+    def connect(self)
+    def disconnect(self)
+    def on_message(self, ws, message)
+    def on_error(self, ws, error)
+    def on_close(self, ws)
+    def start_listening(self)
+    def stop_listening(self)
+```
+
+### 3.2 연결 테스트 스크립트
+```python
+# test_connection.py
+# 기본 연결 및 데이터 수신 확인용
+```
+
+### ✅ Phase 3 체크리스트
+- [ ] WebSocket 클라이언트 기본 구조 구현
+- [ ] 연결/재연결 로직 구현
+- [ ] 메시지 수신 및 큐잉 구현
+- [ ] 에러 처리 로직 구현
+- [ ] 연결 테스트 스크립트 작성 및 검증
+
+---
+
+## 🔄 Phase 4: 데이터 변환 모듈 개발
+
+### 4.1 데이터 프로세서 구현 (data_processor.py)
+
+#### 주요 변환 작업
+- **Protobuf → ROS Messages**
+  - PointCloud → sensor_msgs/PointCloud2
+  - Object Info → visualization_msgs/MarkerArray
+  - Event Data → custom messages
+
+#### 구현해야 할 메서드
+```python
+class DataProcessor:
+    def __init__(self)
+    def decode_protobuf(self, raw_data, message_type)
+    def convert_pointcloud(self, protobuf_pc)
+    def convert_objects(self, protobuf_objects)
+    def convert_events(self, protobuf_events)
+    def create_ros_header(self, timestamp)
+```
+
+### 4.2 메시지 타입 매핑
+| SENSR Data Type | ROS Message Type | Topic |
+|----------------|------------------|--------|
+| PointCloud | sensor_msgs/PointCloud2 | /sensr/pointcloud |
+| Object Detection | visualization_msgs/MarkerArray | /sensr/objects |
+| Events | std_msgs/String | /sensr/events |
+| Health Status | diagnostic_msgs/DiagnosticStatus | /sensr/health |
+
+### ✅ Phase 4 체크리스트
+- [ ] Protobuf 디코딩 함수 구현
+- [ ] PointCloud2 변환 구현
+- [ ] 객체 정보 변환 구현
+- [ ] 이벤트 데이터 변환 구현
+- [ ] ROS 헤더 생성 로직 구현
+- [ ] 단위 테스트 작성
+
+---
+
+## 📦 Phase 5: ROS Bag 레코딩 모듈 개발
+
+### 5.1 Bag 레코더 구현 (bag_recorder.py)
+
+#### 주요 기능
+- 10초 간격 bag 파일 생성
+- 멀티스레드 안전 레코딩
+- 파일명 타임스탬프 관리
+- 메모리 효율적인 버퍼링
+
+#### 구현해야 할 메서드
+```python
+class BagRecorder:
+    def __init__(self, config)
+    def start_recording(self)
+    def stop_recording(self)
+    def create_new_bag(self)
+    def close_current_bag(self)
+    def write_message(self, topic, msg, timestamp)
+    def _timer_callback(self)
+```
+
+### 5.2 파일 관리 전략
+- **파일명 형식**: `sensr_data_YYYYMMDD_HHMMSS.bag`
+- **버퍼링**: 메모리 기반 임시 저장
+- **압축**: bag 파일 압축 옵션
+- **로그 연동**: 파일 생성/종료 로그
+
+### ✅ Phase 5 체크리스트
+- [ ] 기본 bag 레코딩 로직 구현
+- [ ] 타이머 기반 파일 분할 구현
+- [ ] 스레드 안전성 확보
+- [ ] 파일명 생성 로직 구현
+- [ ] 메모리 관리 최적화
+- [ ] 레코딩 성능 테스트
+
+---
+
+## 🎯 Phase 6: 메인 애플리케이션 통합
+
+### 6.1 메인 컨트롤러 구현 (main.py)
+
+#### 애플리케이션 플로우
+```
+1. 설정 파일 로드
+2. 로깅 설정
+3. SENSR 클라이언트 초기화
+4. 데이터 프로세서 초기화  
+5. Bag 레코더 초기화
+6. 연결 및 데이터 수신 시작
+7. 신호 처리 (Ctrl+C 등)
+8. 정리 및 종료
+```
+
+#### 주요 컴포넌트 연결
+```python
+class SensrRecorderApp:
+    def __init__(self, config_path)
+    def initialize_components(self)
+    def start(self)
+    def stop(self)
+    def signal_handler(self, sig, frame)
+    def run(self)
+```
+
+### 6.2 커맨드라인 인터페이스
+```bash
+python main.py --config config/config.yaml --verbose --output-dir /path/to/output
+```
+
+### ✅ Phase 6 체크리스트
+- [ ] 메인 애플리케이션 구조 구현
+- [ ] 컴포넌트 간 연동 구현
+- [ ] 커맨드라인 인터페이스 구현
+- [ ] 신호 처리 (graceful shutdown) 구현
+- [ ] 설정 파일 파싱 구현
+- [ ] 통합 테스트 수행
+
+---
+
+## 🧪 Phase 7: 테스트 및 검증
+
+### 7.1 단위 테스트
+- [ ] SENSR 클라이언트 연결 테스트
+- [ ] 데이터 변환 정확성 테스트
+- [ ] Bag 레코딩 기능 테스트
+- [ ] 타이머 기반 분할 테스트
+
+### 7.2 통합 테스트
+- [ ] 전체 데이터 플로우 테스트
+- [ ] 장시간 실행 안정성 테스트
+- [ ] 네트워크 끊김 복구 테스트
+- [ ] 메모리 누수 테스트
+
+### 7.3 성능 테스트
+- [ ] 데이터 처리 지연시간 측정
+- [ ] 메모리 사용량 모니터링
+- [ ] CPU 사용률 측정
+- [ ] 디스크 I/O 성능 측정
+
+### 7.4 검증 기준
+- 데이터 손실률 < 0.1%
+- 평균 지연시간 < 100ms
+- 메모리 사용량 < 1GB
+- 24시간 연속 운영 안정성
+
+---
+
+## 🚀 Phase 8: 배포 및 운영
+
+### 8.1 배포 준비
+- [ ] requirements.txt 정리
+- [ ] 설치 스크립트 작성
+- [ ] 사용자 매뉴얼 작성
+- [ ] Docker 이미지 준비 (선택사항)
+
+### 8.2 모니터링 및 로깅
+- [ ] 상세 로깅 시스템 구현
+- [ ] 상태 모니터링 대시보드
+- [ ] 알림 시스템 연동
+- [ ] 로그 순환 정책 설정
+
+### 8.3 운영 가이드
+- [ ] 시작/중지 스크립트
+- [ ] 문제 해결 가이드
+- [ ] 백업 및 복구 절차
+- [ ] 성능 튜닝 가이드
+
+---
+
+## 📅 개발 일정
+
+| Phase | 예상 소요 시간 | 주요 마일스톤 |
+|-------|----------------|---------------|
+| Phase 1 | 1일 | 개발 환경 구축 완료 |
+| Phase 2 | 0.5일 | 프로젝트 구조 설계 완료 |
+| Phase 3 | 2일 | SENSR 연결 모듈 완성 |
+| Phase 4 | 2일 | 데이터 변환 모듈 완성 |
+| Phase 5 | 1.5일 | Bag 레코딩 모듈 완성 |
+| Phase 6 | 1일 | 애플리케이션 통합 완료 |
+| Phase 7 | 2일 | 테스트 및 최적화 완료 |
+| Phase 8 | 1일 | 배포 준비 완료 |
+| **총 소요 시간** | **11일** | **프로덕션 배포 가능** |
+
+---
+
+## ⚠️ 위험 요소 및 대응 방안
+
+### 기술적 위험
+- **SENSR 서버 접근 불가**: VPN 또는 네트워크 설정 확인 필요
+- **Protobuf 호환성 문제**: 정확한 버전 매칭 및 스키마 검증
+- **ROS 환경 충돌**: 가상환경 또는 Docker 사용 고려
+
+### 운영적 위험
+- **디스크 공간 부족**: 자동 정리 스크립트 및 모니터링 필요
+- **메모리 누수**: 정기적인 프로세스 재시작 스케줄링
+- **네트워크 불안정**: 강화된 재연결 로직 및 버퍼링
+
+### 대응 방안
+- [ ] 상세한 에러 로깅 및 모니터링
+- [ ] 자동 복구 메커니즘 구현
+- [ ] 백업 및 복구 절차 수립
+- [ ] 정기적인 헬스체크 구현
+
+---
+
+## 📚 참고 자료
+
+- [Seoul Robotics SENSR SDK](https://github.com/seoulrobotics/sensr_sdk)
+- [Seoul Robotics Proto Definitions](https://github.com/seoulrobotics/sensr_proto)
+- [ROS bag API Documentation](http://docs.ros.org/en/melodic/api/rosbag/html/python/)
+- [Protocol Buffers Python Tutorial](https://developers.google.com/protocol-buffers/docs/pythontutorial)
+- [WebSocket Client Documentation](https://websocket-client.readthedocs.io/)
+
+---
+
+*이 계획서는 프로젝트 진행 상황에 따라 업데이트될 수 있습니다.*

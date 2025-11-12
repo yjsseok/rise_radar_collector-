@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  sensr_driver:
+    build: .
+    container_name: sensr_ros2_driver
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - ROS_DOMAIN_ID=0
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./sensr_bags:/workspace/sensr_bags
+    command: >
+      /bin/bash -c "
+      source /opt/ros/humble/setup.bash && 
+      source install/setup.bash && 
+      ros2 launch sensr_ros2_driver sensr_system.launch.py
+      "
+  
+  # RViz2 서비스 (선택적)
+  rviz:
+    build: .
+    container_name: sensr_rviz2
+    restart: "no"
+    network_mode: host
+    environment:
+      - ROS_DOMAIN_ID=0
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    depends_on:
+      - sensr_driver
+    command: >
+      /bin/bash -c "
+      source /opt/ros/humble/setup.bash && 
+      source install/setup.bash && 
+      sleep 5 &&
+      rviz2 -d src/sensr_ros2_driver/config/sensr.rviz
+      "
+    profiles:
+      - visualization

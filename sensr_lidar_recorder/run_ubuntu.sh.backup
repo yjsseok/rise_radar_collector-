@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# SENSR LiDAR Data Recorder - Ubuntu 실행 스크립트
+# ROS 환경에서 SENSR 데이터를 수집하는 스크립트
+
+set -e
+
+echo "================================================"
+echo "SENSR LiDAR Data Recorder - Ubuntu ROS"
+echo "================================================"
+
+# ROS 환경 확인
+if [ -z "$ROS_DISTRO" ]; then
+    echo "[ERROR] ROS 환경이 설정되지 않았습니다"
+    echo "다음 명령을 실행하세요: source /opt/ros/noetic/setup.bash"
+    exit 1
+fi
+
+echo "[INFO] ROS $ROS_DISTRO 환경 확인됨"
+
+# Python 확인
+if ! command -v python3 &> /dev/null; then
+    echo "[ERROR] Python3가 설치되지 않았습니다"
+    exit 1
+fi
+
+echo "[INFO] Python $(python3 --version) 확인됨"
+
+# 설정 파일 확인
+if [ ! -f "config/config.yaml" ]; then
+    echo "[ERROR] 설정 파일을 찾을 수 없습니다: config/config.yaml"
+    exit 1
+fi
+
+echo "[INFO] 설정 파일 확인됨"
+
+# 디렉토리 생성
+mkdir -p logs output
+
+# ROS Core 확인
+if ! pgrep -f roscore > /dev/null; then
+    echo "[WARNING] roscore가 실행되지 않았습니다"
+    echo "다른 터미널에서 'roscore'를 실행하세요"
+    
+    read -p "roscore를 자동으로 시작하시겠습니까? (y/n): " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "[INFO] roscore 시작 중..."
+        roscore &
+        sleep 3
+        ROSCORE_STARTED=1
+    else
+        echo "[INFO] 수동으로 roscore를 시작한 후 Enter를 눌러주세요..."
+        read -r
+    fi
+else
+    echo "[INFO] roscore 실행 중 확인됨"
+    ROSCORE_STARTED=0
+fi
+
+# cleanup 함수
+cleanup() {
+    echo ""
+    echo "[INFO] 프로그램 종료 중..."
+    if [ "$ROSCORE_STARTED" -eq 1 ]; then
+        echo "[INFO] roscore 종료 중..."
+        killall roscore 2>/dev/null || true
+    fi
+    echo "[INFO] 종료 완료"
+    exit 0
+}
+
+# 시그널 핸들러 설정
+trap cleanup SIGINT SIGTERM
+
+echo "[INFO] SENSR LiDAR Data Recorder 시작..."
+echo "[INFO] Ctrl+C로 중단할 수 있습니다"
+echo ""
+
+# 메인 프로그램 실행
+python3 main.py "$@"
+
+# 정상 종료 시에도 cleanup 호출
+cleanup

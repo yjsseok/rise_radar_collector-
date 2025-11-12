@@ -1,0 +1,22 @@
+# SENSR LiDAR Data Recorder - Ubuntu Requirements
+# Seoul Robotics SENSR 시스템과의 통신을 위한 패키지들 (Ubuntu/ROS 환경)
+
+# WebSocket 통신
+websocket-client>=1.0.0
+
+# Protocol Buffers (Ubuntu 호환 버전)
+protobuf>=3.11.4,<4.0.0
+
+# YAML 설정 파일 처리
+PyYAML>=6.0
+
+# NumPy (데이터 처리용)
+numpy>=1.19.0
+
+# ROS 패키지들은 apt로 설치됨:
+# sudo apt install python3-rospy python3-rosbag python3-sensor-msgs 
+# python3-std-msgs python3-geometry-msgs python3-visualization-msgs
+
+# 추가 개발 도구 (선택사항)
+# pytest>=6.0.0
+# pytest-asyncio>=0.18.0

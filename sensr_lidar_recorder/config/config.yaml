@@ -1,0 +1,55 @@
+# 기본 SENSR 연결 설정
+sensr:
+  host: "122.202.187.5"            # 기본 지점 (HQ)
+  active_host_label: "kn"
+  hosts:
+    - id: "kimnyeong"
+      address: "112.133.37.122"
+      description: "김녕"
+    - id: "samyang"
+      address: "122.202.187.5"
+      description: "삼양"
+  ports:
+    output_data: 5050      # 객체, 이벤트 데이터 스트림
+    point_cloud: 5051      # 포인트클라우드 데이터 스트림
+    logs: 5057             # SENSR 로그 소켓
+    rest: 9080             # REST API 포트
+  reconnect_interval: 5    # 재연결 시도 주기 (초)
+  api:
+    # Zone 및 Health API 요청
+    cache_timeout: 5       # API 응답 캐시 지속 시간 (초)
+    request_timeout: 10    # API 요청 타임아웃 (초)
+    # 주요 API 엔드포인트
+    endpoints:
+      health: "/results/health"
+      zones: "/results/zone"
+      sensors: "/settings/sensor-ext"
+      nodes: "/settings/node"
+      projects: "/commands/project"
+      apply_changes: "/commands/apply-change"
+
+recording:
+  duration: 60             # bag 파일 최대 길이 (초) - 메모리 최적화: 600→60
+  output_directory: "/mnt/f/radar"
+  filename_format: "sensr_data_{timestamp}.bag"
+  
+  # 데이터 샘플링 주기 (정밀도 제어)
+  pointcloud_interval: 1.0 # 포인트클라우드 수집 주기 (초)
+  output_data_interval: 1.0 # 객체 데이터 수집 주기 (초)
+  
+  # 수집 데이터 필터 옵션
+  pointcloud_only: false   # true이면 포인트클라우드만 저장
+  skip_empty_data: true   # 비어 있는 패킷은 저장하지 않음
+  track_log_enabled: true   # 추적 객체 수 변동 시 로그
+  
+ros:
+  topics:
+    pointcloud: "/sensr/pointcloud"
+    objects: "/sensr/objects"
+    events: "/sensr/events"
+    health: "/sensr/health"
+    zones: "/sensr/zones"
+
+logging:
+  level: "INFO"
+  file: "./logs/sensr_recorder.log"

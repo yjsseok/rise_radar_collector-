@@ -1,0 +1,33 @@
+# SENSR LiDAR Data Recorder Requirements
+# Seoul Robotics SENSR 시스템과의 통신을 위한 패키지들
+
+# WebSocket 통신
+websocket-client>=1.0.0
+
+# Protocol Buffers (Windows 호환 버전)
+protobuf>=3.20.3,<4.0.0
+
+# YAML 설정 파일 처리
+PyYAML>=6.0
+
+# NumPy (데이터 처리용)
+numpy>=1.19.0
+
+# ROS 패키지들 (ROS 환경에서만 사용 가능)
+# 주의: 이 패키지들은 ROS 환경에서 시스템 패키지로 설치되어야 합니다
+# pip으로 설치하지 마세요
+# rospy
+# rosbag
+# sensor_msgs
+# std_msgs
+# geometry_msgs  
+# visualization_msgs
+# diagnostic_msgs
+
+# 선택사항: 개발 및 테스트용
+# pytest>=6.0.0
+# pytest-asyncio>=0.18.0
+# black>=21.0.0
+# flake8>=3.9.0
+
+Cannot create or open projects with an invalid license!
