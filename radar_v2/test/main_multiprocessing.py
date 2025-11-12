@@ -229,8 +229,15 @@ class SensrMultiprocessingApp:
         except Exception as e:
             self.logger.error(f"❌ 실행 오류: {e}")
         finally:
-            self.stop()
-            self._print_final_report()
+            try:
+                self.stop()
+            except Exception as e:
+                print(f"종료 중 오류 (무시): {e}")
+
+            try:
+                self._print_final_report()
+            except Exception as e:
+                print(f"리포트 출력 실패 (무시): {e}")
 
         return True
 
@@ -298,57 +305,69 @@ class SensrMultiprocessingApp:
             self.logger.error(f"상태 출력 오류: {e}")
 
     def _print_final_report(self):
+        """🚀 v2.1.1: 강화된 예외 처리로 리포트 출력"""
         try:
-            self.logger.info("\n")
-            self.logger.info("=" * 70)
-            self.logger.info("📊 최종 테스트 리포트 (멀티프로세싱)")
-            self.logger.info("=" * 70)
+            print("\n")
+            print("=" * 70)
+            print("📊 최종 테스트 리포트 (멀티프로세싱)")
+            print("=" * 70)
 
-            elapsed = time.time() - self.start_time
-            bag_stats = self.bag_recorder.get_stats()
-            proc_stats = self.data_processor.get_stats()
+            elapsed = time.time() - self.start_time if self.start_time else 1.0
+
+            # 안전하게 통계 가져오기
+            try:
+                bag_stats = self.bag_recorder.get_stats() if self.bag_recorder else {}
+            except:
+                bag_stats = {'total_written': 0, 'total_dropped': 0}
+
+            try:
+                proc_stats = self.data_processor.get_stats() if self.data_processor else {}
+            except:
+                proc_stats = {'total_processed': 0, 'total_dropped': 0, 'avg_process_time': 0}
 
             avg_mem = sum(self.monitor_stats['memory_samples']) / len(self.monitor_stats['memory_samples']) if self.monitor_stats['memory_samples'] else 0
             max_mem = max(self.monitor_stats['memory_samples']) if self.monitor_stats['memory_samples'] else 0
             min_mem = min(self.monitor_stats['memory_samples']) if self.monitor_stats['memory_samples'] else 0
 
-            self.logger.info(f"\n⏱️  총 실행 시간: {elapsed:.2f}초")
+            print(f"\n⏱️  총 실행 시간: {elapsed:.2f}초")
 
-            self.logger.info(f"\n📨 메시지 수신:")
-            self.logger.info(f"  - 총 수신: {self.monitor_stats['messages_received']}")
-            self.logger.info(f"  - 포인트클라우드: {self.monitor_stats['pointcloud_count']}")
-            self.logger.info(f"  - Output Data: {self.monitor_stats['output_data_count']}")
+            print(f"\n📨 메시지 수신:")
+            print(f"  - 총 수신: {self.monitor_stats.get('messages_received', 0)}")
+            print(f"  - 포인트클라우드: {self.monitor_stats.get('pointcloud_count', 0)}")
+            print(f"  - Output Data: {self.monitor_stats.get('output_data_count', 0)}")
 
-            self.logger.info(f"\n⚙️ 멀티프로세싱 통계:")
-            self.logger.info(f"  - 워커 수: {self.num_workers}개")
-            self.logger.info(f"  - 총 처리: {proc_stats['total_processed']}")
-            self.logger.info(f"  - 드롭: {proc_stats['total_dropped']}")
-            self.logger.info(f"  - 평균 처리 시간: {proc_stats['avg_process_time']*1000:.2f}ms")
+            print(f"\n⚙️ 멀티프로세싱 통계:")
+            print(f"  - 워커 수: {self.num_workers}개")
+            print(f"  - 총 처리: {proc_stats.get('total_processed', 0)}")
+            print(f"  - 드롭: {proc_stats.get('total_dropped', 0)}")
+            print(f"  - 평균 처리 시간: {proc_stats.get('avg_process_time', 0)*1000:.2f}ms")
 
-            self.logger.info(f"\n💾 디스크 쓰기:")
-            self.logger.info(f"  - 총 쓰기: {bag_stats['total_written']}")
-            self.logger.info(f"  - 드롭된 메시지: {bag_stats['total_dropped']}")
+            print(f"\n💾 디스크 쓰기:")
+            print(f"  - 총 쓰기: {bag_stats.get('total_written', 0)}")
+            print(f"  - 드롭된 메시지: {bag_stats.get('total_dropped', 0)}")
 
             # 처리량 계산
-            throughput_received = self.monitor_stats['messages_received'] / elapsed
-            throughput_processed = proc_stats['total_processed'] / elapsed
-            throughput_written = bag_stats['total_written'] / elapsed
+            throughput_received = self.monitor_stats.get('messages_received', 0) / elapsed
+            throughput_processed = proc_stats.get('total_processed', 0) / elapsed
+            throughput_written = bag_stats.get('total_written', 0) / elapsed
 
-            self.logger.info(f"\n🚀 처리량:")
-            self.logger.info(f"  - 수신: {throughput_received:.1f} msg/s")
-            self.logger.info(f"  - 처리: {throughput_processed:.1f} msg/s")
-            self.logger.info(f"  - 쓰기: {throughput_written:.1f} msg/s")
+            print(f"\n🚀 처리량:")
+            print(f"  - 수신: {throughput_received:.1f} msg/s")
+            print(f"  - 처리: {throughput_processed:.1f} msg/s")
+            print(f"  - 쓰기: {throughput_written:.1f} msg/s")
 
-            self.logger.info(f"\n💻 시스템 리소스:")
-            self.logger.info(f"  - 메모리 (평균): {avg_mem:.1f} MB")
-            self.logger.info(f"  - 메모리 (최소): {min_mem:.1f} MB")
-            self.logger.info(f"  - 메모리 (최대): {max_mem:.1f} MB")
-            self.logger.info(f"  - 메모리 증가: {max_mem - min_mem:.1f} MB")
+            print(f"\n💻 시스템 리소스:")
+            print(f"  - 메모리 (평균): {avg_mem:.1f} MB")
+            print(f"  - 메모리 (최소): {min_mem:.1f} MB")
+            print(f"  - 메모리 (최대): {max_mem:.1f} MB")
+            print(f"  - 메모리 증가: {max_mem - min_mem:.1f} MB")
 
-            self.logger.info("\n" + "=" * 70)
+            print("\n" + "=" * 70)
 
         except Exception as e:
-            self.logger.error(f"❌ 리포트 출력 오류: {e}")
+            print(f"❌ 리포트 출력 오류: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def main():
