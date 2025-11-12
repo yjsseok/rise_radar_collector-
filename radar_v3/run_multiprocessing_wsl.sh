@@ -29,8 +29,8 @@ else
     echo "ROS2 없이 실행 (Windows Mock 모드)"
 fi
 
-# PYTHONPATH 설정
-export PYTHONPATH="$(pwd):$(pwd)/../src:$PYTHONPATH"
+# PYTHONPATH 설정 (radar_v3 구조)
+export PYTHONPATH="$(pwd):$(pwd)/src:$PYTHONPATH"
 
 # Python 실행
 python3 main_multiprocessing.py --host $HOST --duration $DURATION --workers $WORKERS

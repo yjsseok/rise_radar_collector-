@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package sensr_proto;
+
+message PointResult {
+  message PointCloud {
+    enum Type {
+      NONE = 0;
+      GROUND = 1;
+      BACKGROUND = 2;
+      RAW = 3;
+    }
+    Type type = 1;
+    string id = 2;	// In calibration : algo_uid#topic, In runtime : meaningless
+    bytes points = 3;      // Data type of points is Vector3f(12bytes). When you parsing this data, please be aware of this.
+    bytes intensities = 4; // Data type of intensities is float(4bytes). When you parsing this data, please be aware of this.
+  }
+  repeated PointCloud points = 1;
+  string uid = 201;
+}
