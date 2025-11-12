@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "sensr_proto/global_type.proto";
+
+package sensr_proto;
+
+option cc_enable_arenas = true;
+
+enum LabelType {
+  reserved 6; // Reserved for former object label type gate.
+  LABEL_NONE = 0;
+  LABEL_CAR = 1;
+  LABEL_PEDESTRIAN = 2;
+  LABEL_CYCLIST = 3;
+  LABEL_MISC = 4;
+  LABEL_GROUND = 5;
+  LABEL_MAX = 7;
+}
+
+enum ZoneType {
+  reserved 4; // Reserved for former gate zone type.
+  ZONE_TYPE_NONE = 0;
+  ZONE_TYPE_EVENT = 1;
+  ZONE_TYPE_EXCLUSION = 2;
+  ZONE_TYPE_REFLECTION = 3;
+  ZONE_TYPE_STATIC = 5;
+  ZONE_TYPE_MAP_EXCLUSION = 6;
+  ZONE_TYPE_BACKGROUND_REMOVAL = 7;
+}
+
+enum TrackingStatus {
+  NONE = 0;
+  VALIDATING = 1; // Checking validity in the early stage of tracking
+  INVALIDATING = 2; // Short term prediction when tracking is lost in VALIDATING status
+  TRACKING = 3; // Stable tracking
+  DRIFTING = 4; // Short term prediction when tracking is lost in TRACKING status
+  EXPIRED = 5; // Expired tracking
+};
+
+
+message BoundingBox {
+  Vector3 position = 1;
+  Vector3 size = 2;
+  float yaw = 3;
+}
+
+message PolygonBox {
+  repeated Vector2 points = 1;
+  float min_z = 2;
+  float max_z = 3;
+}
+
+message History {
+  message State {
+    Vector3 position = 1;
+    google.protobuf.Timestamp timestamp = 2;
+  }
+  reserved 1; // Reserved by backward compatibility.
+  repeated State states = 2;
+}
+
+message Prediction {
+  message ReachableSet {
+    float t_offset = 1;
+    PolygonBox space = 2;
+  }
+  repeated Vector3 positions = 1;
+  repeated ReachableSet reachable_set = 2;
+}
+
+message Object {
+  reserved 7, 9;
+  int32 id = 1;
+  LabelType label = 2;
+  float confidence = 3;
+  BoundingBox bbox = 4;
+  Vector3 velocity = 5;
+  TrackingStatus tracking_status = 6;
+  float yaw_rate = 8;
+  bool retro_reflective = 10;
+  google.protobuf.Timestamp last_observed_timestamp = 11;
+  bool is_static = 12;
+  bytes points = 101;           // Data type of points is Vector3f(12bytes). When you parsing this data, please be aware of this.
+  History history = 102;
+  Prediction prediction = 103;
+  repeated int32 zone_ids = 104;
+  bytes intensities = 105;      // Data type of intensities is float(4bytes). When you parsing this data, please be aware of this.
+
+}
+
+message ProfilingResult {
+  message Characteristic {
+    oneof member_oneof {
+      int64 integer_number = 1;
+      double decimal_number = 2;
+      string text = 3;
+    }
+  }
+  map<string, uint64> processing_times = 1;
+  map<string, uint64> mem_usages = 2;
+  map<string, Characteristic> characteristics = 101;
+}
