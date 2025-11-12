@@ -15,11 +15,9 @@ import psutil
 import multiprocessing as mp
 from typing import Optional, Dict, Any
 
-parent_dir = os.path.join(os.path.dirname(__file__), '..')
-sys.path.insert(0, parent_dir)
-
-test_src_dir = os.path.join(os.path.dirname(__file__), 'src')
-sys.path.insert(0, test_src_dir)
+# radar_v3 구조: main_multiprocessing.py가 루트, src/가 바로 옆
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
 from src.sensr_client import SensrClient
 from src.data_processor_multiprocessing import DataProcessorMultiprocessing
@@ -27,8 +25,7 @@ from src.utils import (
     load_config, setup_logging, validate_config,
     setup_signal_handlers, find_host_entry, set_active_host
 )
-
-from bag_recorder_optimized import BagRecorderOptimized
+from src.bag_recorder_optimized import BagRecorderOptimized
 
 
 class SensrMultiprocessingApp:
@@ -372,7 +369,7 @@ class SensrMultiprocessingApp:
 
 def main():
     parser = argparse.ArgumentParser(description='SENSR Multiprocessing Test')
-    parser.add_argument('--config', '-c', default='../config/config.yaml')
+    parser.add_argument('--config', '-c', default='./config/config.yaml')
     parser.add_argument('--host', '-H', help='SENSR 호스트')
     parser.add_argument('--duration', '-d', type=int, default=300, help='테스트 시간 (초)')
     parser.add_argument('--workers', '-w', type=int, default=4, help='워커 프로세스 수 (기본: 4)')
@@ -399,8 +396,8 @@ def main():
         set_active_host(runtime_config, host_entry)
         print(f"🎯 호스트: {host_entry['id']} ({host_entry['address']})")
 
-    runtime_config['recording']['output_directory'] = './test/output'
-    os.makedirs('./test/output', exist_ok=True)
+    runtime_config['recording']['output_directory'] = './output'
+    os.makedirs('./output', exist_ok=True)
 
     print("=" * 70)
     print("🚀 SENSR 멀티프로세싱 고속 처리 테스트")
