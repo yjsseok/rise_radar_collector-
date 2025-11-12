@@ -10,6 +10,7 @@ import time
 import logging
 import queue
 import gc
+from collections import deque
 from typing import Callable, Optional, Dict, Any
 import json
 
@@ -20,7 +21,7 @@ class SensrClient:
     def __init__(self, config: Dict[str, Any], message_callback: Optional[Callable] = None):
         """
         SensrClient 초기화
-        
+
         Args:
             config: 설정 딕셔너리
             message_callback: 메시지 수신 시 호출될 콜백 함수
@@ -29,11 +30,26 @@ class SensrClient:
         self.host = config['sensr']['host']
         self.ports = config['sensr']['ports']
         self.reconnect_interval = config['sensr']['reconnect_interval']
-        
+
         self.message_callback = message_callback
-        # 🔧 메모리 최적화: 큐 크기 제한 (메모리 폭발 방지)
-        # 멀티프로세싱 환경에서는 더 큰 버퍼가 필요
-        self.message_queue = queue.Queue(maxsize=200)
+
+        # 🚀 v2.1.0: 독립 deque 사용 (데이터 타입별)
+        queue_config = config.get('queue', {})
+        self.max_items = queue_config.get('max_items', 200)
+        self.high_watermark_pct = queue_config.get('high_watermark_pct', 80)
+        self.drop_policy = queue_config.get('drop_policy', 'oldest')
+
+        # 데이터 타입별 독립 deque
+        self.output_deque = deque(maxlen=self.max_items)
+        self.pointcloud_deque = deque(maxlen=self.max_items)
+        self.deque_lock = threading.Lock()
+
+        # 경고 상태 (한 번만 경고)
+        self.high_watermark_warned = False
+        self.high_watermark_threshold = int(self.max_items * self.high_watermark_pct / 100)
+
+        # 멀티프로세싱 환경을 위한 메시지 큐 (하위 호환성)
+        self.message_queue = queue.Queue(maxsize=self.max_items)
 
         # WebSocket 연결 객체들
         self.ws_output = None
@@ -109,12 +125,16 @@ class SensrClient:
                 self.ws_pointcloud.close()
                 self.ws_pointcloud = None
 
-            # 🔧 메모리 정리: 큐 비우기
+            # 🔧 메모리 정리: 큐 및 deque 비우기
             while not self.message_queue.empty():
                 try:
                     self.message_queue.get_nowait()
                 except queue.Empty:
                     break
+
+            with self.deque_lock:
+                self.output_deque.clear()
+                self.pointcloud_deque.clear()
 
             # 🔧 가비지 컬렉션 실행
             collected = gc.collect()
@@ -237,7 +257,12 @@ class SensrClient:
             self.logger.error(f"Point cloud 메시지 처리 오류: {e}")
     
     def _process_message(self, message, data_type: str):
-        """수신된 메시지 처리 (메모리 관리 포함)"""
+        """
+        🚀 v2.1.0: 수신된 메시지 처리 (Deterministic Backpressure)
+        - 데이터 타입별 독립 deque 사용
+        - high watermark 기반 경고 (한 번만)
+        - drop_policy에 따른 메시지 드롭
+        """
         try:
             # 🔧 주기적 가비지 컬렉션
             current_time = time.time()
@@ -246,27 +271,49 @@ class SensrClient:
                 self.logger.debug(f"🗑️ 주기적 GC: {collected}개 객체 수집")
                 self.last_gc_time = current_time
 
-            # 메시지를 큐에 추가
+            # 메시지 데이터 생성
             message_data = {
                 'data': message,
                 'type': data_type,
                 'timestamp': current_time
             }
 
-            self.message_queue.put_nowait(message_data)
-        except queue.Full:
-            self.logger.warning("메시지 큐가 가득참. 오래된 메시지를 제거합니다.")
+            # 🚀 데이터 타입별 독립 deque에 추가
+            with self.deque_lock:
+                if data_type == 'point_cloud':
+                    self.pointcloud_deque.append(message_data)
+                    current_size = len(self.pointcloud_deque)
+                else:  # output_data
+                    self.output_deque.append(message_data)
+                    current_size = len(self.output_deque)
+
+                # 🚀 High watermark 체크 (한 번만 경고)
+                total_size = len(self.output_deque) + len(self.pointcloud_deque)
+                if total_size >= self.high_watermark_threshold and not self.high_watermark_warned:
+                    self.logger.warning(
+                        f"⚠️ 큐 high watermark 도달: {total_size}/{self.max_items} "
+                        f"({self.high_watermark_pct}%) - drop_policy: {self.drop_policy}"
+                    )
+                    self.high_watermark_warned = True
+                elif total_size < self.high_watermark_threshold:
+                    # watermark 아래로 내려가면 경고 리셋
+                    self.high_watermark_warned = False
+
+            # 하위 호환성을 위한 Queue에도 추가 (멀티프로세싱용)
             try:
-                # 🔧 오래된 메시지 삭제
-                old_message = self.message_queue.get_nowait()
-                del old_message  # 명시적 삭제
                 self.message_queue.put_nowait(message_data)
-            except queue.Empty:
-                pass
+            except queue.Full:
+                # 큐가 가득 차면 오래된 메시지 제거
+                try:
+                    old_message = self.message_queue.get_nowait()
+                    del old_message
+                    self.message_queue.put_nowait(message_data)
+                except queue.Empty:
+                    pass
+
         except Exception as e:
             self.logger.error(f"메시지 처리 중 오류: {e}")
         finally:
-            # 🔧 콜백 처리 후 메시지 데이터는 콜백에서 관리
             pass
 
         # 콜백 함수 호출

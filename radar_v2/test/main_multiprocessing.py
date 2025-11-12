@@ -12,6 +12,7 @@ import argparse
 import logging
 import copy
 import psutil
+import multiprocessing as mp
 from typing import Optional, Dict, Any
 
 parent_dir = os.path.join(os.path.dirname(__file__), '..')
@@ -31,7 +32,7 @@ from bag_recorder_optimized import BagRecorderOptimized
 
 
 class SensrMultiprocessingApp:
-    """멀티프로세싱을 사용한 고속 처리 앱"""
+    """🚀 v2.1.0: 멀티프로세싱을 사용한 고속 처리 앱 (Graceful Shutdown)"""
 
     def __init__(self, config_path: str, runtime_config: Optional[Dict[str, Any]] = None,
                  test_duration: int = 300, num_workers: int = 4):
@@ -48,6 +49,9 @@ class SensrMultiprocessingApp:
 
         self.is_running = False
         self.start_time = None
+
+        # 🚀 v2.1.0: Graceful shutdown을 위한 Event
+        self.shutdown_event = mp.Event()
 
         self.monitor_stats = {
             'messages_received': 0,
@@ -144,10 +148,12 @@ class SensrMultiprocessingApp:
             self.logger.error(f"종료 중 오류: {e}")
 
     def run(self):
+        """🚀 v2.1.0: 메인 실행 루프 (Graceful Shutdown 및 적응형 워커 풀)"""
         if not self.initialize_components():
             return False
 
-        setup_signal_handlers(self.stop)
+        # 🚀 v2.1.0: shutdown_event를 signal handler에 전달
+        setup_signal_handlers(self.stop, self.shutdown_event)
 
         if not self.start():
             return False
@@ -163,7 +169,16 @@ class SensrMultiprocessingApp:
             batch_size = 50  # 한 번에 최대 50개 결과 수집
             batch_timeout = 0.01  # 10ms 타임아웃
 
-            while self.is_running:
+            # 🚀 v2.1.0: 적응형 워커 풀 체크 간격
+            last_scale_check = time.time()
+            scale_check_interval = 5.0
+
+            while self.is_running and not self.shutdown_event.is_set():
+                # 🚀 v2.1.0: 적응형 워커 풀 체크
+                if time.time() - last_scale_check >= scale_check_interval:
+                    self.data_processor._scale_workers()
+                    last_scale_check = time.time()
+
                 # 🚀 멀티프로세싱 배치 결과 수집 (비블로킹)
                 results = self.data_processor.get_results_batch(
                     max_count=batch_size,

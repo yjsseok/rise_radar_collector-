@@ -214,37 +214,60 @@ def validate_config(config: Dict[str, Any]) -> bool:
     return True
 
 
-def create_signal_handler(cleanup_func):
+def create_signal_handler(cleanup_func, shutdown_event=None):
     """
-    시그널 핸들러 생성 (Ctrl+C 등을 위한 graceful shutdown)
-    
+    🚀 v2.1.0: 시그널 핸들러 생성 (Graceful shutdown - multiprocessing 지원)
+
     Args:
         cleanup_func: 정리 작업을 수행할 함수
-        
+        shutdown_event: multiprocessing.Event 또는 None
+
     Returns:
         시그널 핸들러 함수
     """
+    signal_received = [False]  # 중복 신호 방지
+
     def signal_handler(sig, frame):
-        print(f"\n시그널 {sig} 수신. 프로그램을 종료합니다...")
+        if signal_received[0]:
+            print("\n이미 종료 중입니다. 잠시만 기다려주세요...")
+            return
+
+        signal_received[0] = True
+        print(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...")
+
+        # shutdown_event 설정 (multiprocessing 환경)
+        if shutdown_event:
+            try:
+                shutdown_event.set()
+            except:
+                pass
+
+        # cleanup 함수 호출
         if cleanup_func:
-            cleanup_func()
-        sys.exit(0)
-    
+            try:
+                cleanup_func()
+            except Exception as e:
+                print(f"정리 작업 중 오류: {e}")
+
+        # 🚀 v2.1.0: sys.exit() 대신 정상적으로 종료
+        # main()에서 shutdown_event를 확인하고 종료하도록 변경
+
     return signal_handler
 
 
-def setup_signal_handlers(cleanup_func):
+def setup_signal_handlers(cleanup_func, shutdown_event=None):
     """
-    시그널 핸들러 설정
-    
+    🚀 v2.1.0: 시그널 핸들러 설정 (multiprocessing 지원)
+
     Args:
         cleanup_func: 정리 작업을 수행할 함수
+        shutdown_event: multiprocessing.Event 또는 None
     """
-    handler = create_signal_handler(cleanup_func)
-    
+    handler = create_signal_handler(cleanup_func, shutdown_event)
+
     # SIGINT (Ctrl+C) 처리
     signal.signal(signal.SIGINT, handler)
-    
+
     # SIGTERM 처리 (Linux/Unix, Windows에서는 무시)
     try:
         if hasattr(signal, 'SIGTERM'):
