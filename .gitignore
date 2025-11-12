@@ -1,0 +1,57 @@
+# Output directories
+output/
+output_pcd_test/
+*/output/
+*/simple_output/
+radar_v2/simple_output/
+sensr_lidar_recorder/output/
+
+# Log files
+logs/
+*.log
+*/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+radar_v2/venv/
+sensr_lidar_recorder/venv/
+
+# Bag files (ROS data files - usually large)
+*.bag
+*.bag.active
+
+# PCD files (Point Cloud Data - usually large)
+*.pcd
+
+# Protobuf compiled files (can be regenerated)
+*_pb2.py
+*_pb2_grpc.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
