@@ -1,0 +1,43 @@
+@echo off
+chcp 65001 >nul
+setlocal EnableDelayedExpansion
+
+echo ================================================
+echo 🚀 SENSR Simple PointCloud Recorder (WSL Version)
+echo ================================================
+
+echo [INFO] Checking WSL installation...
+wsl --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] WSL is not installed
+    pause
+    exit /b 1
+)
+
+echo [INFO] Checking Python installation in WSL...
+wsl python3 --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Python is not installed in WSL
+    pause
+    exit /b 1
+)
+
+echo [INFO] Creating required directories in WSL...
+wsl mkdir -p /mnt/e/work/withclaude/radar_data/radar_v2/simple_output
+
+echo [INFO] Starting SENSR Simple PointCloud Recorder in WSL...
+echo [INFO] Output: simple_output/ directory
+echo [INFO] Press Ctrl+C to stop
+echo.
+
+REM Default arguments if none provided
+if "%~1"=="" (
+    echo [INFO] Using default settings: --interval 1.0 --host 122.202.187.5
+    wsl cd /mnt/e/work/withclaude/radar_data/radar_v2 ^&^& python3 simple_pointcloud_recorder.py --interval 1.0 --host 122.202.187.5
+) else (
+    wsl cd /mnt/e/work/withclaude/radar_data/radar_v2 ^&^& python3 simple_pointcloud_recorder.py %*
+)
+
+echo.
+echo [INFO] Simple recorder terminated
+pause
