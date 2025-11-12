@@ -16,6 +16,9 @@ config/config.yaml
 */config/config.yaml
 radar_v2/config/config.yaml
 sensr_lidar_recorder/config/config.yaml
+ros_test/src/sensr_ros2_driver/config/sensr_params.yaml
+.env
+.env.local
 
 # Python
 __pycache__/

@@ -1,6 +1,6 @@
 sensr_driver:
   ros__parameters:
-    host: "112.133.37.122"
+    host: "YOUR_SENSR_IP"
     output_port: 5050
     pointcloud_port: 5051
     frame_id: "sensr"
