@@ -8,7 +8,7 @@ echo ""
 
 # 호스트와 워커 수 설정
 HOST="samyang"
-DURATION=60
+DURATION=3600
 WORKERS=4
 
 echo "호스트: $HOST"
