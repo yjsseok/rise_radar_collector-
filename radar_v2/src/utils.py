@@ -228,29 +228,27 @@ def create_signal_handler(cleanup_func, shutdown_event=None):
     signal_received = [False]  # 중복 신호 방지
 
     def signal_handler(sig, frame):
+        import sys
+
         if signal_received[0]:
-            print("\n이미 종료 중입니다. 잠시만 기다려주세요...")
+            # 🚀 v2.1.2: stderr 사용으로 reentrant call 방지
+            sys.stderr.write("\n이미 종료 중입니다. 잠시만 기다려주세요...\n")
+            sys.stderr.flush()
             return
 
         signal_received[0] = True
-        print(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...")
+        sys.stderr.write(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...\n")
+        sys.stderr.flush()
 
-        # shutdown_event 설정 (multiprocessing 환경)
+        # 🚀 v2.1.2: shutdown_event만 설정, cleanup은 finally 블록에서
         if shutdown_event:
             try:
                 shutdown_event.set()
             except:
                 pass
 
-        # cleanup 함수 호출
-        if cleanup_func:
-            try:
-                cleanup_func()
-            except Exception as e:
-                print(f"정리 작업 중 오류: {e}")
-
-        # 🚀 v2.1.0: sys.exit() 대신 정상적으로 종료
-        # main()에서 shutdown_event를 확인하고 종료하도록 변경
+        # 🚀 v2.1.2: cleanup은 signal handler에서 호출하지 않음
+        # finally 블록에서 안전하게 처리되도록 변경
 
     return signal_handler
 
