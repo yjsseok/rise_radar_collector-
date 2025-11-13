@@ -225,20 +225,17 @@ def create_signal_handler(cleanup_func, shutdown_event=None):
     Returns:
         시그널 핸들러 함수
     """
-    signal_received = [False]  # 중복 신호 방지
+    signal_count = [0]  # CTRL+C 카운트
+    import time
+    first_signal_time = [0]
 
     def signal_handler(sig, frame):
-        import sys
-
         if signal_received[0]:
-            # 🚀 v2.1.2: stderr 사용으로 reentrant call 방지
-            sys.stderr.write("\n이미 종료 중입니다. 잠시만 기다려주세요...\n")
-            sys.stderr.flush()
+            print("\n이미 종료 중입니다. 잠시만 기다려주세요...")
             return
 
         signal_received[0] = True
-        sys.stderr.write(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...\n")
-        sys.stderr.flush()
+        print(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...")
 
         # 🚀 v2.1.2: shutdown_event만 설정, cleanup은 finally 블록에서
         if shutdown_event:
