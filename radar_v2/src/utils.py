@@ -225,32 +225,37 @@ def create_signal_handler(cleanup_func, shutdown_event=None):
     Returns:
         시그널 핸들러 함수
     """
-    signal_received = [False]  # 중복 신호 방지
+    signal_count = [0]  # CTRL+C 카운트
+    import time
+    first_signal_time = [0]
 
     def signal_handler(sig, frame):
-        if signal_received[0]:
-            print("\n이미 종료 중입니다. 잠시만 기다려주세요...")
-            return
+        import sys
 
-        signal_received[0] = True
-        print(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...")
+        signal_count[0] += 1
+        current_time = time.time()
 
-        # shutdown_event 설정 (multiprocessing 환경)
+        # 🚀 v2.1.2: 두 번째 CTRL+C는 강제 종료
+        if signal_count[0] >= 2:
+            sys.stderr.write("\n강제 종료합니다...\n")
+            sys.stderr.flush()
+            sys.exit(1)
+
+        # 첫 번째 시그널
+        first_signal_time[0] = current_time
+        sys.stderr.write(f"\n시그널 {sig} 수신. 프로그램을 정상 종료합니다...\n")
+        sys.stderr.write("(다시 CTRL+C를 누르면 강제 종료됩니다)\n")
+        sys.stderr.flush()
+
+        # 🚀 v2.1.2: shutdown_event만 설정, cleanup은 finally 블록에서
         if shutdown_event:
             try:
                 shutdown_event.set()
             except:
                 pass
 
-        # cleanup 함수 호출
-        if cleanup_func:
-            try:
-                cleanup_func()
-            except Exception as e:
-                print(f"정리 작업 중 오류: {e}")
-
-        # 🚀 v2.1.0: sys.exit() 대신 정상적으로 종료
-        # main()에서 shutdown_event를 확인하고 종료하도록 변경
+        # 🚀 v2.1.2: cleanup은 signal handler에서 호출하지 않음
+        # finally 블록에서 안전하게 처리되도록 변경
 
     return signal_handler
 
