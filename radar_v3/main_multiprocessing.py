@@ -32,7 +32,7 @@ class SensrMultiprocessingApp:
     """🚀 v2.1.0: 멀티프로세싱을 사용한 고속 처리 앱 (Graceful Shutdown)"""
 
     def __init__(self, config_path: str, runtime_config: Optional[Dict[str, Any]] = None,
-                 test_duration: int = 300, num_workers: int = 4):
+                 test_duration: int = 3600, num_workers: int = 4):
         self.config_path = config_path
         self._runtime_config = runtime_config
         self.config = None

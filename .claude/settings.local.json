@@ -47,7 +47,9 @@
       "Read(E:\\Coding\\APItoDB_WAMIS\\APItoDB_WAMIS/**)",
       "Read(E:\\Coding\\APItoDB_WAMIS\\APItoDB_WAMIS/**)",
       "Read(E:\\Coding\\APItoDB_WAMIS\\APItoDB_WAMIS/**)",
-      "Bash(rsync:*)"
+      "Bash(rsync:*)",
+      "Bash(wsl which:*)",
+      "Bash(wsl protoc:*)"
     ],
     "deny": [],
     "ask": []
