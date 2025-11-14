@@ -395,42 +395,45 @@ class BagPlayerGUI:
 
         self._show_frame(update_slider=True)
 
-    def _on_key_event(self, event: gui.KeyEvent) -> gui.EventCallbackResult:
+    def _on_key_event(self, event: gui.KeyEvent) -> int:
         """Handle keyboard events"""
+        IGNORED = 0
+        HANDLED = 1
+
         if event.type != gui.KeyEvent.DOWN:
-            return gui.EventCallbackResult.IGNORED
+            return IGNORED
 
         if event.key == gui.KeyName.SPACE:
             self.playing = not self.playing
-            return gui.EventCallbackResult.HANDLED
+            return HANDLED
 
         elif event.key == gui.KeyName.LEFT:
             self.playing = False
             self.current_index = max(0, self.current_index - 1)
             self._show_frame(update_slider=True)
-            return gui.EventCallbackResult.HANDLED
+            return HANDLED
 
         elif event.key == gui.KeyName.RIGHT:
             self.playing = False
             total = self.bag_reader.get_message_count()
             self.current_index = min(total - 1, self.current_index + 1)
             self._show_frame(update_slider=True)
-            return gui.EventCallbackResult.HANDLED
+            return HANDLED
 
         elif event.key == gui.KeyName.HOME:
             self.playing = False
             self.current_index = 0
             self._show_frame(update_slider=True)
-            return gui.EventCallbackResult.HANDLED
+            return HANDLED
 
         elif event.key == gui.KeyName.END:
             self.playing = False
             total = self.bag_reader.get_message_count()
             self.current_index = total - 1
             self._show_frame(update_slider=True)
-            return gui.EventCallbackResult.HANDLED
+            return HANDLED
 
-        return gui.EventCallbackResult.IGNORED
+        return IGNORED
 
     def _on_layout(self, layout_context: gui.LayoutContext):
         """Handle window layout"""
