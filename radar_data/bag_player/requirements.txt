@@ -1,0 +1,21 @@
+# ROS2 Dependencies (WSL/Ubuntu only)
+# These must be installed in a ROS2 environment
+# Source ROS2 first: source /opt/ros/humble/setup.bash
+
+# rosbag2-py>=0.15.0  # Install via: sudo apt install ros-humble-rosbag2-py
+# rclpy>=3.3.0        # Install via: sudo apt install ros-humble-rclpy
+# sensor-msgs>=4.2.0  # Install via: sudo apt install ros-humble-sensor-msgs
+# sensor-msgs-py>=4.2.0  # Install via: sudo apt install ros-humble-sensor-msgs-py
+# rosidl-runtime-py>=0.9.0  # Install via: sudo apt install ros-humble-rosidl-runtime-py
+
+# Visualization
+open3d>=0.17.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# Configuration
+PyYAML>=6.0
+
+# Note: tkinter is usually included with Python
+# If not available, install with: sudo apt install python3-tk
