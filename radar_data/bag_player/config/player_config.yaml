@@ -1,0 +1,21 @@
+player:
+  default_fps: 10.0
+  default_speed: 1.0
+  loop_playback: false
+  auto_play: false
+
+visualization:
+  point_size: 2.0
+  background_color: [0.0, 0.0, 0.0, 1.0]
+  show_axes: true
+  intensity_colormap: "viridis"  # Options: viridis, jet, hot, cool
+
+window:
+  width: 1280
+  height: 720
+  title: "ROS2 Bag Player - SENSR Radar"
+
+search:
+  default_directory: "../../radar_v3/output"
+  recursive_search: true
+  auto_select_latest: false
