@@ -80,8 +80,8 @@ class SensrMultiprocessingApp:
             self.logger.info("🚀 SENSR Multiprocessing App 시작")
 
             recording_config = self.config.get('recording', {})
-            self.pointcloud_interval = recording_config.get('pointcloud_interval', 0.5)
-            self.output_data_interval = recording_config.get('output_data_interval', 0.5)
+            self.pointcloud_interval = recording_config.get('pointcloud_interval', 1.0)
+            self.output_data_interval = recording_config.get('output_data_interval', 1.0)
             self.pointcloud_only_mode = recording_config.get('pointcloud_only', False)
             self.skip_empty_data = recording_config.get('skip_empty_data', True)
 
@@ -396,8 +396,8 @@ def main():
         set_active_host(runtime_config, host_entry)
         print(f"🎯 호스트: {host_entry['id']} ({host_entry['address']})")
 
-    runtime_config['recording']['output_directory'] = './output'
-    os.makedirs('./output', exist_ok=True)
+    # runtime_config['recording']['output_directory'] = './output'
+    # os.makedirs('./output', exist_ok=True)
 
     print("=" * 70)
     print("🚀 SENSR 멀티프로세싱 고속 처리 테스트")
